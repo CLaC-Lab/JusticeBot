@@ -40,8 +40,9 @@ class FactsOrAnalysis(nn.Module):
     
     def forward(self,input_tensor):
         hidden=self.initHidden()
-#         print("HOAL")
+#         print("input:",input_tensor.shape)
         output = self.embedding(input_tensor)
+#         print("output:",output.shape)
         conv_output = self.conv1(output.permute(0,2,1))
         conv_output = conv_output.squeeze(2)
         output = self.drop(output)
