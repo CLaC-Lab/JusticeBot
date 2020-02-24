@@ -38,15 +38,16 @@ def trainIters(model,
                n_epochs,
                learning_rate,
                weight_decay,
-               clip):
+               clip,
+               collate_fn=None):
     
     print("CUDA is available!" if torch.cuda.is_available() else "NO CUDA 4 U")
     
     optimiser = torch.optim.Adam(model.parameters(), lr=learning_rate,weight_decay=weight_decay)
     criterion = torch.nn.BCELoss()
     
-    train_dl=torch.utils.data.DataLoader(train_dset, batch_size=batch_size)
-    valid_dl=torch.utils.data.DataLoader(valid_dset, batch_size=batch_size)
+    train_dl=torch.utils.data.DataLoader(train_dset, batch_size=batch_size,collate_fn=collate_fn)
+    valid_dl=torch.utils.data.DataLoader(valid_dset, batch_size=batch_size,collate_fn=collate_fn)
     
     train_losses=[np.inf]
     valid_losses=[np.inf]

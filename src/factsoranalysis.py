@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class FactsOrAnalysis(nn.Module):
     def __init__(self,embeddings_tensor,hidden_size=512,dropout=.5,gru_dropout=.3,embedding_size=200,
