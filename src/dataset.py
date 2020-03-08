@@ -48,3 +48,29 @@ class FactsOrAnalysisDataset(Dataset):
         sentence = F.pad(sentence, pad=(0, padding), mode='constant', value=0)
         annotation = torch.tensor([1,0], dtype=torch.float) if annotation==1 else torch.tensor([0,1], dtype=torch.float)
         return sentence,annotation
+    
+class FactsOrAnalysisDS_BERT(Dataset):
+    """
+    PyTorch Dataset class. Returns input-target tensor pairs
+    """
+    
+    def __init__(self,csv_file,tokeniser,n_read='all'):
+        """
+        IN: csv file location, BertTokeniser object
+        """
+        with open(csv_file) as f:
+            dataset=[line.split(",") for line in f]
+        if n_read=='all':
+            self.dataset=[[torch.tensor(tokeniser.encode(datum[0])),
+                           int(datum[1][0])] for datum in dataset]
+        else:
+            self.dataset=[]
+            for i in range(n_read):
+                self.dataset.append([torch.tensor(tokeniser.encode(dataset[i][0])),
+                           int(dataset[i][1][0])])
+    
+    def __len__(self):
+        return (len(self.dataset))
+    
+    def __getitem__(self,index):
+        return self.dataset[index]
