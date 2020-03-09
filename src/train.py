@@ -16,7 +16,7 @@ class PadSequence:
 def train(input_tensor,target,model,optimiser,criterion,clip,lengths):
     model.train()
     optimiser.zero_grad()
-    prediction = model(input_tensor,lengths=lengths)
+    prediction = model(input_tensor)
     loss = criterion(prediction.squeeze(1),target)
     loss.backward()
     torch.nn.utils.clip_grad_norm_(model.parameters(),clip)
@@ -25,7 +25,7 @@ def train(input_tensor,target,model,optimiser,criterion,clip,lengths):
 
 def valid(input_tensor,target,model,criterion,lengths):
     model.eval()
-    prediction = model(input_tensor,lengths=lengths)
+    prediction = model(input_tensor)
     loss = criterion(prediction.squeeze(1),target)
     return loss.item(), prediction
 

@@ -102,4 +102,4 @@ class FoaFlauBERTlinear(nn.Module):
         self.sigma = nn.Sigmoid()
 
     def forward(self, input_tensor):
-        return self.sigma(self.flaubert(input_tensor[0]))
+        return self.sigma(self.flaubert(input_tensor)[0])
