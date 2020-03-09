@@ -1,11 +1,12 @@
+"""
+Module containing all experimental mod
+"""
 import torch
 from torch import nn
 
+
 class FactsOrAnalysis(nn.Module):
-    def __init__(self,embeddings_tensor,hidden_size=512,dropout=.5,gru_dropout=.3,embedding_size=200,
-                out_channels=100,
-                kernel_size=3,
-                max_sen_len=50):
+    def __init__(self,embeddings_tensor,hidden_size=512,dropout=.5,gru_dropout=.3,embedding_size=200,out_channels=100,kernel_size=3,max_sen_len=50):
         super(FactsOrAnalysis, self).__init__()
         self.hidden_size = hidden_size
         self.embedding_size = embedding_size
@@ -52,43 +53,53 @@ class FactsOrAnalysis(nn.Module):
         output = self.linear(cat_tensors)
         return self.softmax(output)
 
-## FIRST EXPERIMENT: camemBERT as embeddings model that feeds into a GRU network
-## Originally a combination of the output of a GRU network and a CNN, I am now replacing
-## the architecture to include a BERT model whose output is fed into a recurrent layer
 
-class FoA_camemBERT_rnn(nn.Module):
-    def __init__(self,camembert,hidden_size=128):
-        super(FoA_camemBERT_rnn, self).__init__()
-        self.camembert=camembert
-        self.gru=torch.nn.GRU(
+
+class FoaCamemBERTrnn(nn.Module):
+    """FIRST EXPERIMENT: camemBERT as embeddings model that feeds into a GRU network
+Originally a combination of the output of a GRU network and a CNN, I am now replacing
+the architecture to include a BERT model whose output is fed into a recurrent layer"""
+    def __init__(self, camembert, hidden_size=128):
+        super(FoaCamemBERTrnn, self).__init__()
+        self.camembert = camembert
+        self.gru = torch.nn.GRU(
             input_size=768,
             hidden_size=hidden_size,
             num_layers=3,
             batch_first=True,
             bidirectional=True)
-        self.linear=nn.Linear(hidden_size,1)
-        self.sigma=torch.nn.Sigmoid()
-        
-    def forward(self,input_tensor, lengths=None):
-        output=self.camembert(input_tensor)[0]
-        if lengths is not None:
-            output=torch.nn.utils.rnn.pack_padded_sequence(output, 
-                                                               lengths, 
-                                                               batch_first=True, 
-                                                               enforce_sorted=True)
-        _,hidden=self.gru(output)
-        output=hidden[0]
-        output=self.linear(output)
-        return self.sigma(output)
-    
-# SECOND EXPERIMENT: camemBERT only
-# I compare the stand-alone camemBERT model with a linear layer at the top and the
-# original architecture
-class FoA_camemBERT_linear(nn.Module):
-    def __init__(self,camembert):
-        super(FoA_camemBERT_linear, self).__init__()
-        self.camembert=camembert
-        self.sigma=nn.Sigmoid()
+        self.linear = nn.Linear(hidden_size, 1)
+        self.sigma = torch.nn.Sigmoid()
 
-    def forward(self,input_tensor, lengths=None):
+    def forward(self, input_tensor, lengths=None):
+        output = self.camembert(input_tensor)[0]
+        if lengths is not None:
+            output = torch.nn.utils.rnn.pack_padded_sequence(output, lengths, batch_first=True, enforce_sorted=True)
+        _, hidden = self.gru(output)
+        output = hidden[0]
+        output = self.linear(output)
+        return self.sigma(output)
+
+
+class FoaCamemBERTlinear(nn.Module):
+    """SECOND EXPERIMENT: camemBERT only
+    I compare the stand-alone camemBERT model with a linear layer at the top and the
+    original architecture"""
+    def __init__(self, camembert):
+        super(FoaCamemBERTlinear, self).__init__()
+        self.camembert = camembert
+        self.sigma = nn.Sigmoid()
+
+    def forward(self, input_tensor):
         return self.sigma(self.camembert(input_tensor)[0])
+
+class FoaFlauBERTlinear(nn.Module):
+    """THIRD EXPERIMENT: I compare the stand-alone FlauBERT model with a linear layer at the top and
+    the original architecture"""
+    def __init__(self, flaubert):
+        super(FoaFlauBERTlinear, self).__init__()
+        self.flaubert = flaubert
+        self.sigma = nn.Sigmoid()
+
+    def forward(self, input_tensor):
+        return self.sigma(self.flaubert(input_tensor[0]))
