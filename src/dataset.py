@@ -57,17 +57,17 @@ class FactsOrAnalysisDS_BERT(Dataset):
         """
         IN: csv file location, BertTokeniser object
         """
-        with open(pickle_file) as file:
+        with open(pickle_file,"rb") as file:
             dataset = pickle.load(file)
 
         if n_read == 'all':
             self.dataset = [[torch.tensor(tokeniser.encode(datum[0])),
-                           int(datum[1][0])] for datum in dataset]
+                           int(datum[1])] for datum in dataset]
         else:
             self.dataset = []
             for i in range(n_read):
                 self.dataset.append([torch.tensor(tokeniser.encode(dataset[i][0])),
-                           int(dataset[i][1][0])])
+                           int(dataset[i][1])])
     
     def __len__(self):
         return len(self.dataset)
