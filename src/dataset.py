@@ -74,3 +74,16 @@ class FactsOrAnalysisDS_BERT(Dataset):
     
     def __getitem__(self,index):
         return self.dataset[index]
+
+class FactsOrAnalysisRNN(Dataset):
+    """
+    Pytorch Dataset class. Returns input-target tensor pairs
+    """
+    def __init__(self, pickle_file, tokeniser, n_read='all'):
+        """
+        IN: pickle file containing full documents, camemBERT tokeniser object
+        """
+        with open(pickle_file) as file:
+            dataset = pickle.load(file):
+        
+        
