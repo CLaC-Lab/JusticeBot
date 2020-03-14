@@ -1,4 +1,4 @@
-import gensim,torch,pickle
+import torch,pickle#, gensim
 import pandas as pd
 from torch.utils.data import Dataset
 import torch.nn.functional as F
@@ -72,10 +72,10 @@ class FactsOrAnalysisDS_BERT(Dataset):
     def __len__(self):
         return len(self.dataset)
     
-    def __getitem__(self,index):
+    def __getitem__(self, index):
         return self.dataset[index]
 
-class FactsOrAnalysisRNN(Dataset):
+class FactsOrAnalysisDatasetRNN(Dataset):
     """
     Pytorch Dataset class. Returns input-target tensor pairs
     """
@@ -83,7 +83,27 @@ class FactsOrAnalysisRNN(Dataset):
         """
         IN: pickle file containing full documents, camemBERT tokeniser object
         """
-        with open(pickle_file) as file:
-            dataset = pickle.load(file):
-        
-        
+        self.dataset = []
+        with open(pickle_file, "rb") as file:
+            dataset = pickle.load(file)
+
+        if n_read == 'all':
+            n = len(dataset)
+        else:
+            n = n_read
+
+        for i in range(n):
+            facts, non_facts = dataset[i]['facts'], dataset[i]['non_facts']
+            facts = [tokeniser.encode(sentence) for sentence in facts]
+            facts = [torch.tensor(sentence) for sentence in facts]
+            non_facts = [tokeniser.encode(sentence) for sentence in non_facts]
+            non_facts = [torch.tensor(sentence) for sentence in non_facts]
+            ones, zeros = len(dataset[i]['facts']), len((dataset[i]['non_facts']))
+            ones, zeros = torch.ones(ones), torch.zeros(zeros)
+            self.dataset.append([facts + non_facts, torch.cat([ones, zeros])])
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+        return self.dataset[index]

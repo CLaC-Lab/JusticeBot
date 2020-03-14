@@ -2,4 +2,4 @@
 bert_tests/
 BERT test.ipynb
 *.sublime*
-
+test_script.py
