@@ -98,6 +98,9 @@ class FactsOrAnalysisDatasetRNN(Dataset):
             facts = [torch.tensor(sentence) for sentence in facts]
             non_facts = [tokeniser.encode(sentence) for sentence in non_facts]
             non_facts = [torch.tensor(sentence) for sentence in non_facts]
+            #############################################
+            ## TO DO: Think moar about catting tensors ##
+            #############################################
             ones, zeros = len(dataset[i]['facts']), len((dataset[i]['non_facts']))
             ones, zeros = torch.ones(ones), torch.zeros(zeros)
             self.dataset.append([facts + non_facts, torch.cat([ones, zeros])])

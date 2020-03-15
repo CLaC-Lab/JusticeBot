@@ -117,7 +117,7 @@ class FactOrAnalysisRNN(nn.Module):
 
     def forward(self, input_tensor):
         print(input_tensor.shape)
-        output = [self.camembert(sentence)[1] for sentence in input_tensor]
+        output = [self.camembert(sentence) for sentence in input_tensor]
         output = torch.stack(output, dim=1)
         output = self.gru(output)[0][:,:,-1]
         return self.sigma(output)
