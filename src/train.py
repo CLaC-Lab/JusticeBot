@@ -40,9 +40,9 @@ def test(target_tensor,prediction_tensor):
     p = np.array([predic for predic in p])
     p = p.round()
     p = p.squeeze(1)
-#     print(t,p)
+    print("HOAL",t,p,type(t),type(p))
             
-    return accuracy_score(t,p), f1_score(t,p), precision_score(t,p), recall_score(t,p)
+    return accuracy_score(t,p), precision_score(t,p), recall_score(t,p)
 
 def trainIters(model,
                train_dset,
@@ -68,8 +68,7 @@ def trainIters(model,
     train_acc=train_prec=train_rec=0
     valid_acc=valid_prec=valid_rec=0
     tqdm_range=tqdm(range(1,n_epochs+1),desc='Epoch',leave=False)
-    print("\n\ntr loss\ttr acc\ttr prec\ttr rec\tv loss\tv acc\tv prec\tv rec")
-
+    first_epoch = True
     for epoch in tqdm_range:
         
         #################################
@@ -115,7 +114,7 @@ def trainIters(model,
                                            criterion,
                                            clip,
                                            lengths)
-            accuracy,f1,precision,recall=test(target,prediction)
+            accuracy,precision,recall=test(target,prediction)
             avg_train.append(train_loss)
             train_acc.append(accuracy)
             train_prec.append(precision)
@@ -142,7 +141,7 @@ def trainIters(model,
                                            model,
                                            criterion,
                                            lengths)
-                accuracy,f1,precision,recall=test(target,valid_pred)
+                accuracy, precision, recall = test(target,valid_pred)
                 avg_valid.append(v_loss)
                 valid_acc.append(accuracy)
                 valid_prec.append(precision)
@@ -156,6 +155,9 @@ def trainIters(model,
             
         # IPython.display.clear_output(wait=True)
         # tqdm_range.refresh()
+        if first_epoch:
+            print("\n\ntr loss\t\ttr acc\t\ttr prec\t\ttr rec\t\tv loss\t\tv acc\t\tv prec\t\tv rec")
+            first_epoch = False
         print("{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t".format(avg_train,train_acc,train_prec,train_rec,avg_valid,valid_acc,valid_prec,valid_rec))
 
     return train_losses,valid_losses

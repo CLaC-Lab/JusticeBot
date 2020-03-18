@@ -1,4 +1,6 @@
 import torch
+import warnings
+warnings.filterwarnings('ignore')
 from transformers import CamembertForSequenceClassification, CamembertTokenizer
 from src.dataset import FactsOrAnalysisDS_BERT
 from src.models import FoaCamemBERTlinear
@@ -9,7 +11,7 @@ camembert_seq = CamembertForSequenceClassification.from_pretrained('camembert-ba
 tokeniser = CamembertTokenizer.from_pretrained('camembert-base')
 print("Loading dataset…")
 ds = "data/dataset_sentences_facts_non_facts20200311.pickle"
-ds = FactsOrAnalysisDS_BERT(ds,tokeniser,n_read=512)
+ds = FactsOrAnalysisDS_BERT(ds,tokeniser,n_read=64)
 tr = int(len(ds)*.70)+1
 vd = int(len(ds)*.10)+1
 ts = len(ds) - tr - vd
