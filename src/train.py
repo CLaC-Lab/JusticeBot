@@ -1,11 +1,14 @@
-import torch,IPython,numpy as np
+import torch, IPython, numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm
 from sklearn.metrics import accuracy_score,f1_score,precision_score,recall_score
 from transformers import AdamW
 
 class PadSequence:
-    def __call__(self,batch):
+    """
+    Collate function that returns padded sequence to pass to DataLoader
+    """
+    def __call__(self, batch):
         sorted_batch = sorted(batch, key=lambda x: x[0].shape[0], reverse=True)
         sequences = [x[0] for x in sorted_batch]
         sequences_padded = torch.nn.utils.rnn.pad_sequence(sequences, batch_first=True)
@@ -65,37 +68,39 @@ def trainIters(model,
     train_acc=train_prec=train_rec=0
     valid_acc=valid_prec=valid_rec=0
     tqdm_range=tqdm(range(1,n_epochs+1),desc='Epoch',leave=False)
+    print("\n\ntr loss\ttr acc\ttr prec\ttr rec\tv loss\tv acc\tv prec\tv rec")
+
     for epoch in tqdm_range:
         
         #################################
         ### STUFF RELATED TO PLOTTING ###
         #################################
-        plt.gca().cla()
-        plt.xlim(0,n_epochs)
-        plt.ylim(0,2)
-        plt.title("Learning curve")
-        plt.xlabel("Number of epochs")
-        plt.ylabel("Loss")
-        plt.text(n_epochs/2,1.9,"Train loss: {:.2f}".format(train_losses[-1]))
-        plt.text(n_epochs/2,1.8,"Validation loss: {:.2f}".format(valid_losses[-1]))
-        plt.text(n_epochs/2,1.7,"Tr acc: {:.2f}".format(train_acc))
-        plt.text(n_epochs/2,1.6,"Tr pre: {:.2f}".format(train_prec))
-        plt.text(n_epochs/2,1.5,"Tr rec: {:.2f}".format(train_rec))
-        plt.text(n_epochs/2,1.4,"Va acc: {:.2f}".format(valid_acc))
-        plt.text(n_epochs/2,1.3,"Va pre: {:.2f}".format(valid_prec))
-        plt.text(n_epochs/2,1.2,"Va rec: {:.2f}".format(valid_rec))
-        plt.plot(train_losses, "-b", label="Training loss")
-        plt.plot(valid_losses, "-r", label="Validation loss")
-        plt.legend(loc="upper left")
-        IPython.display.display(plt.gcf())
+        # plt.gca().cla()
+        # plt.xlim(0,n_epochs)
+        # plt.ylim(0,2)
+        # plt.title("Learning curve")
+        # plt.xlabel("Number of epochs")
+        # plt.ylabel("Loss")
+        # plt.text(n_epochs/2,1.9,"Train loss: {:.2f}".format(train_losses[-1]))
+        # plt.text(n_epochs/2,1.8,"Validation loss: {:.2f}".format(valid_losses[-1]))
+        # plt.text(n_epochs/2,1.7,"Tr acc: {:.2f}".format(train_acc))
+        # plt.text(n_epochs/2,1.6,"Tr pre: {:.2f}".format(train_prec))
+        # plt.text(n_epochs/2,1.5,"Tr rec: {:.2f}".format(train_rec))
+        # plt.text(n_epochs/2,1.4,"Va acc: {:.2f}".format(valid_acc))
+        # plt.text(n_epochs/2,1.3,"Va pre: {:.2f}".format(valid_prec))
+        # plt.text(n_epochs/2,1.2,"Va rec: {:.2f}".format(valid_rec))
+        # plt.plot(train_losses, "-b", label="Training loss")
+        # plt.plot(valid_losses, "-r", label="Validation loss")
+        # plt.legend(loc="upper left")
+        # IPython.display.display(plt.gcf())
         ########################################
         ### END OF STUFF RELATED TO PLOTTING ###
         ########################################
-        avg_train=[]
-        train_acc=[]
-        train_prec=[]
-        train_rec=[]
-        train_dl=tqdm(train_dl,desc='Training',leave=False)
+        avg_train = []
+        train_acc = []
+        train_prec = []
+        train_rec = []
+        train_dl = tqdm(train_dl,desc='Training',leave=False)
         
 #         for i in train_dl:
 #             print(i[0],i[1],i[2])
@@ -149,7 +154,8 @@ def trainIters(model,
             valid_rec=sum(valid_rec)/len(valid_rec)
             valid_losses.append(v_loss)
             
-        IPython.display.clear_output(wait=True)
-        tqdm_range.refresh()
-    
+        # IPython.display.clear_output(wait=True)
+        # tqdm_range.refresh()
+        print("{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t".format(avg_train,train_acc,train_prec,train_rec,avg_valid,valid_acc,valid_prec,valid_rec))
+
     return train_losses,valid_losses

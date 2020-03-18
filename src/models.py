@@ -109,15 +109,17 @@ class FactOrAnalysisRNN(nn.Module):
     I take a document, encode it as a sequence of byte-pair sequences, pass them through
     camemBERT, and then through a GRU network
     """
-    def __init__(self,camembert,hidden_size=512):
+    def __init__(self, camembert, hidden_size=512):
         super(FactOrAnalysisRNN, self).__init__()
         self.camembert = camembert
         self.gru = nn.GRU(768, hidden_size, bidirectional=True)
         self.sigma = nn.Sigmoid()
 
-    def forward(self, input_tensor):
-        print(input_tensor.shape)
-        output = [self.camembert(sentence) for sentence in input_tensor]
-        output = torch.stack(output, dim=1)
-        output = self.gru(output)[0][:,:,-1]
-        return self.sigma(output)
+    def forward(self, tensor):
+        print(tensor.shape)
+        print(tensor[0].shape)
+        tensor = self.camembert(tensor[0])[1]
+        tensor = tensor.unsqueeze(0)
+        print(tensor.shape)
+        tensor = self.gru(tensor)[0][:,:,-1]
+        return self.sigma(tensor).squeeze(0)

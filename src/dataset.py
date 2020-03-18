@@ -1,7 +1,8 @@
 import torch,pickle#, gensim
 import pandas as pd
-from torch.utils.data import Dataset
 import torch.nn.functional as F
+from torch.utils.data import Dataset
+from tqdm import tqdm
 
 class Lexicon:
     """Helper function. Collects vocabulary of embeddings model into key-value and value-key pairs"""
@@ -57,17 +58,16 @@ class FactsOrAnalysisDS_BERT(Dataset):
         """
         IN: csv file location, BertTokeniser object
         """
+        self.dataset = []
         with open(pickle_file,"rb") as file:
             dataset = pickle.load(file)
 
         if n_read == 'all':
-            self.dataset = [[torch.tensor(tokeniser.encode(datum[0])),
-                           int(datum[1])] for datum in dataset]
+            n = len(dataset)
         else:
-            self.dataset = []
-            for i in range(n_read):
-                self.dataset.append([torch.tensor(tokeniser.encode(dataset[i][0])),
-                           int(dataset[i][1])])
+            n = n_read
+        for i in tqdm(range(n),desc="Encoding sentences…"):
+            self.dataset.append([torch.tensor(tokeniser.encode(dataset[i][0], max_length=1024)), int(dataset[i][1])])
     
     def __len__(self):
         return len(self.dataset)
@@ -81,7 +81,8 @@ class FactsOrAnalysisDatasetRNN(Dataset):
     """
     def __init__(self, pickle_file, tokeniser, n_read='all'):
         """
-        IN: pickle file containing full documents, camemBERT tokeniser object
+        IN: pickle file containing full documents, camemBERT tokeniser object,
+        and camemBERT model.
         """
         self.dataset = []
         with open(pickle_file, "rb") as file:
@@ -98,12 +99,10 @@ class FactsOrAnalysisDatasetRNN(Dataset):
             facts = [torch.tensor(sentence) for sentence in facts]
             non_facts = [tokeniser.encode(sentence) for sentence in non_facts]
             non_facts = [torch.tensor(sentence) for sentence in non_facts]
-            #############################################
-            ## TO DO: Think moar about catting tensors ##
-            #############################################
             ones, zeros = len(dataset[i]['facts']), len((dataset[i]['non_facts']))
             ones, zeros = torch.ones(ones), torch.zeros(zeros)
-            self.dataset.append([facts + non_facts, torch.cat([ones, zeros])])
+            doc = torch.nn.utils.rnn.pad_sequence(facts + non_facts, batch_first=True)
+            self.dataset.append([doc, torch.cat([ones, zeros])])
 
     def __len__(self):
         return len(self.dataset)
