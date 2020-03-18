@@ -40,7 +40,6 @@ def test(target_tensor,prediction_tensor):
     p = np.array([predic for predic in p])
     p = p.round()
     p = p.squeeze(1)
-    print("HOAL",t,p,type(t),type(p))
             
     return accuracy_score(t,p), precision_score(t,p), recall_score(t,p)
 
@@ -119,7 +118,7 @@ def trainIters(model,
             train_acc.append(accuracy)
             train_prec.append(precision)
             train_rec.append(recall)
-            train_dl.set_description('Training accuracy: {:.4f}'.format(accuracy))
+            train_dl.set_description('Training loss: {:.4f}'.format(train_loss))
         avg_train=sum(avg_train)/len(avg_train)
         
         train_acc=sum(train_acc)/len(train_acc)
