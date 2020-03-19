@@ -8,7 +8,6 @@ print("Loading camemBERT model and tokeniser…")
 camembert = CamembertModel.from_pretrained('camembert-base')
 camembert.eval()
 tokeniser = CamembertTokenizer.from_pretrained('camembert-base')
-print("Loading dataset…")
 dataset = "data/dataset_docs_facts_non_facts20200311.pickle"
 dataset = FactsOrAnalysisDatasetRNN(dataset, tokeniser, n_read='all')
 # model = FactOrAnalysisRNN(camembert,hidden_size=64)
@@ -30,7 +29,8 @@ class Reduced(torch.nn.Module):
 model = Reduced(camembert)
 
 n_doc = 0
-for doc in tqdm(dataset,desc="Current document: {}".format(n_doc)):
+print("Writing camemBERT representations to disc…")
+for doc in tqdm(dataset):
 	sentences = doc[0]
 	with open("data/camemBERT_representations/{}.pickle".format(n_doc),"ab") as file:
 		for sentence in tqdm(sentences,desc="Writing sentences"):
