@@ -95,9 +95,9 @@ class FactsOrAnalysisDatasetRNN(Dataset):
         print("Creating the dataset…")
         for i in tqdm(range(n), desc="Progress"):
             facts, non_facts = dataset[i]['facts'], dataset[i]['non_facts']
-            facts = [tokeniser.encode(sentence, max_length=512) for sentence in facts]
+            facts = [tokeniser.encode(sentence, max_length=1024) for sentence in facts]
             facts = [torch.tensor(sentence) for sentence in facts]
-            non_facts = [tokeniser.encode(sentence, max_length=512) for sentence in non_facts]
+            non_facts = [tokeniser.encode(sentence, max_length=1024) for sentence in non_facts]
             non_facts = [torch.tensor(sentence) for sentence in non_facts]
             ones, zeros = len(dataset[i]['facts']), len((dataset[i]['non_facts']))
             ones, zeros = torch.ones(ones), torch.zeros(zeros)
