@@ -9,7 +9,7 @@ camembert = CamembertModel.from_pretrained('camembert-base')
 camembert.eval()
 tokeniser = CamembertTokenizer.from_pretrained('camembert-base')
 dataset = "data/dataset_docs_facts_non_facts20200311.pickle"
-dataset = FactsOrAnalysisDatasetRNN(dataset, tokeniser, n_read='all')
+dataset = FactsOrAnalysisDatasetRNN(dataset, tokeniser, n_read=64)
 # model = FactOrAnalysisRNN(camembert,hidden_size=64)
 
 import torch
@@ -31,10 +31,13 @@ model = Reduced(camembert)
 n_doc = 0
 print("Writing camemBERT representations to disc…")
 for doc in tqdm(dataset):
-	sentences = doc[0]
-	with open("data/camemBERT_representations/{}.pickle".format(n_doc),"ab") as file:
-		for sentence in tqdm(sentences,desc="Writing sentences"):
-			sentence = model(sentence.unsqueeze(0))
-			pickle.dump(sentence, file)
-	n_doc += 1
+    sentences = doc[0]
+    with open("data/camemBERT_representations/{}.pickle".format(n_doc),"ab") as file:
+    	for sentence in tqdm(sentences,desc="Writing sentences"):
+            try:
+                sentence = model(sentence.unsqueeze(0))
+                pickle.dump(sentence, file)
+            except RuntimeError:
+                print("Document {} produced an error. Skipping it…".format(n_doc))
+    n_doc += 1
 print("\nDone!")
