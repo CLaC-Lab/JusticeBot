@@ -24,32 +24,44 @@ class Reduced(torch.nn.Module):
         x = self.camembert(x)[1]
         x = self.reduce(x)
         return x
+    
+class camemWRAP(torch.nn.Module):
+    def __init__(self,camembert):
+        super(camemWRAP, self).__init__()
+        self.camembert = camembert
+    
+    def forward(self, x):
+        return self.camembert(x)[1]
+
+def createDataset(dim, model):
+    n_doc = 0
+    failed_docs = []
+    print("Writing camemBERT representations to disc…")
+    for doc in tqdm(dataset):
+        sentences = doc[0]
+        annotations = doc[1]
+        with open("data/camemBERT_representations_{}/{}.pickle".format(str(dim),n_doc),"ab") as file:
+            for sentence in tqdm(sentences,desc="Writing sentences"):
+                try:
+                    sentence = sentence.to(device)
+                    sentence = model(sentence.unsqueeze(0))
+                    sentence = sentence.to(torch.device('cpu'))
+                    pickle.dump(sentence, file)
+                except RuntimeError:
+                    print("\nDocument {} produced an error. Skipping it…".format(n_doc))
+                    failed_docs.append(n_doc)
+                    break
+            pickle.dump(annotations.to(torch.device('cpu')), file)
+        n_doc += 1
+    if failed_docs != []:
+        print("\nUnable to add documents {} because of RuntimeError".format(failed_docs))
+    print("\nDone!")
 
 model = Reduced(camembert)
 model.eval()
 model.to(device)
-
-n_doc = 0
-failed_docs = []
-print("Writing camemBERT representations to disc…")
-for doc in tqdm(dataset):
-    sentences = doc[0]
-    annotations = doc[1]
-    with open("data/camemBERT_representations/{}.pickle".format(n_doc),"ab") as file:
-        for sentence in tqdm(sentences,desc="Writing sentences"):
-            try:
-                sentence = sentence.to(device)
-                sentence = model(sentence.unsqueeze(0))
-                pickle.dump(sentence, file)
-            except RuntimeError:
-                print("\nDocument {} produced an error. Skipping it…".format(n_doc))
-                failed_docs.append(n_doc)
-                break
-        try:
-            pickle.dump(annotations.to(device), file)
-        except RuntimeError:
-            pass
-    n_doc += 1
-if failed_docs != []:
-    print("\nUnable to add documents {} because of RuntimeError".format(failed_docs))
-print("\nDone!")
+createDataset(dim=64,model=model)
+model = camemWRAP(camembert)
+model.eval()
+model.to(device)
+createDataset(dim=768,model=model)
