@@ -1,4 +1,4 @@
-import torch,pickle#, gensim
+import torch, pickle, os
 import pandas as pd
 import torch.nn.functional as F
 from torch.utils.data import Dataset
@@ -109,3 +109,30 @@ class FactsOrAnalysisDatasetRNN(Dataset):
 
     def __getitem__(self, index):
         return self.dataset[index]
+
+class DocumentDataset(Dataset):
+    """
+    Inherits the PyTorch Dataset class. 
+    Reads disc and returns camemBERT document representation
+    """
+    def __init__(self, ds_loc):
+        """ds_loc : folder containing the raw data"""
+        self.loc = ds_loc
+    
+    def __len__(self):
+        return len(os.listdir(self.loc))
+    
+    def __getitem__(self, index):
+        filename = "{}{}.pickle".format(self.loc, str(index))
+        doc = []
+        with open(filename, "rb") as file:
+            while True:
+                try:
+                    doc.append(pickle.load(file))
+                except EOFError:
+                    break
+        sentences = doc[:-1]
+        sentences = [tensor.squeeze(0) for tensor in sentences]
+        sentences = torch.stack(sentences)
+        annotations = doc[-1]
+        return sentences, annotations

@@ -123,3 +123,35 @@ class FactOrAnalysisRNN(nn.Module):
         print(tensor.shape)
         tensor = self.gru(tensor)[0][:,:,-1]
         return self.sigma(tensor).squeeze(0)
+
+class LSTMLinear(torch.nn.Module):
+    """
+    LSTM network with a linear head that takes in a camemBERT
+    document representation and returns a binary sequence
+    """
+    def __init__(self, embedding_size):
+        super(LSTMLinear, self).__init__()
+        self.lstm = torch.nn.LSTM(input_size=embedding_size, hidden_size=64, batch_first=True, bidirectional=True)
+        self.linear = torch.nn.Linear(in_features=2*embedding_size, out_features=1)
+        self.sigma = torch.nn.Sigmoid()
+    def forward(self, x):
+        output = self.lstm(x)[0]
+        output = self.linear(output)
+        output = self.sigma(output)
+        return output
+
+class GRULinear(torch.nn.Module):
+    """
+    GRU network with a linear head that takes in a camemBERT
+    document representation and returns a binary sequence
+    """
+    def __init__(self, embedding_size):
+        super(GRULinear, self).__init__()
+        self.gru = torch.nn.GRU(input_size=embedding_size, hidden_size=64, batch_first=True, bidirectional=True)
+        self.linear = torch.nn.Linear(in_features=2*embedding_size, out_features=1)
+        self.sigma = torch.nn.Sigmoid()
+    def forward(self, x):
+        output = self.gru(x)[0]
+        output = self.linear(output)
+        output = self.sigma(output)
+        return output
