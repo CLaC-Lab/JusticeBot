@@ -28,7 +28,7 @@ def train(input_tensor,target,model,optimiser,criterion,clip):
 
 def valid(input_tensor,target,model,criterion):
     model.eval()
-    prediction = model(input_tensor).squeeze(0)
+    prediction = model(input_tensor)
     loss = criterion(prediction, target)
     return loss.item(), prediction
 
@@ -39,7 +39,10 @@ def test(target_tensor,prediction_tensor):
     p = prediction_tensor.cpu().detach().numpy()
     p = np.array([predic for predic in p])
     p = p.round()
-    p, t = p.squeeze(0), t.squeeze(0)        
+    try:
+        p, t = p.squeeze(0), t.squeeze(0)
+    except ValueError:
+        print(p.shape, t.shape)
     return accuracy_score(t, p), precision_score(t, p), recall_score(t, p)
 
 def trainIters(model,
@@ -52,7 +55,10 @@ def trainIters(model,
                clip,
                device,
                collate_fn=PadSequence()):
-    
+
+    with open("output", "w") as op:
+        op.write("tr loss\t\ttr acc\t\ttr prec\t\ttr rec\t\tv loss\t\tv acc\t\tv prec\t\tv rec\n\n")
+        
     print("CUDA is available!" if torch.cuda.is_available() else "NO CUDA 4 U")
     
     optimiser = AdamW(model.parameters(), lr=learning_rate,weight_decay=weight_decay)
@@ -65,7 +71,7 @@ def trainIters(model,
     valid_losses = [np.inf]
     train_acc = train_prec = train_rec = 0
     valid_acc = valid_prec = valid_rec = 0
-    tqdm_range = tqdm(range(1, n_epochs+1), desc='Epoch', leave=False)
+    tqdm_range = tqdm(range(1, n_epochs+1), desc='Epochs', leave=False)
     first_epoch = True
     for epoch in tqdm_range:
         
@@ -97,7 +103,7 @@ def trainIters(model,
         train_acc = []
         train_prec = []
         train_rec = []
-        train_dl = tqdm(train_dl,desc='Training',leave=False)
+        train_dl = tqdm(train_dl,desc='Training examples',leave=False)
         
 #         for i in train_dl:
 #             print(i[0],i[1],i[2])
@@ -116,21 +122,20 @@ def trainIters(model,
             train_acc.append(accuracy)
             train_prec.append(precision)
             train_rec.append(recall)
-            train_dl.set_description('Training loss: {:.4f}'.format(train_loss))
+            train_dl.set_description("Training loss: {:.4f}".format(train_loss))
         avg_train=sum(avg_train)/len(avg_train)
         
         train_acc=sum(train_acc)/len(train_acc)
         train_prec=sum(train_prec)/len(train_prec)
         train_rec=sum(train_rec)/len(train_rec)
         train_losses.append(avg_train)
-        
         with torch.no_grad():
             avg_valid=[]
             valid_acc=[]
             valid_prec=[]
             valid_rec=[]
-            valid_dl=tqdm(valid_dl,desc='Validating',leave=False)
-            for x, y,lengths in valid_dl:
+            valid_dl=tqdm(valid_dl,desc='Validation examples',leave=False)
+            for x, y in valid_dl:
                 input_tensor = x.to(device)
                 target = y.to(device)
                 v_loss, valid_pred = valid(input_tensor,
@@ -142,7 +147,7 @@ def trainIters(model,
                 valid_acc.append(accuracy)
                 valid_prec.append(precision)
                 valid_rec.append(recall)
-                valid_dl.set_description('Validation accuracy: {:.4f}'.format(accuracy))
+                valid_dl.set_description('Validation loss: {:.4f}'.format(v_loss))
             avg_valid=sum(avg_valid)/len(avg_valid)
             valid_acc=sum(valid_acc)/len(valid_acc)
             valid_prec=sum(valid_prec)/len(valid_prec)
@@ -151,9 +156,6 @@ def trainIters(model,
             
         # IPython.display.clear_output(wait=True)
         # tqdm_range.refresh()
-        if first_epoch:
-            print("\n\ntr loss\t\ttr acc\t\ttr prec\t\ttr rec\t\tv loss\t\tv acc\t\tv prec\t\tv rec")
-            first_epoch = False
-        print("{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t".format(avg_train,train_acc,train_prec,train_rec,avg_valid,valid_acc,valid_prec,valid_rec))
-
+        with open("output", "a") as op:
+            op.write("{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t\n".format(avg_train,train_acc,train_prec,train_rec,avg_valid,valid_acc,valid_prec,valid_rec))
     return train_losses, valid_losses
