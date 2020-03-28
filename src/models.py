@@ -138,7 +138,7 @@ class LSTMLinear(torch.nn.Module):
         output = self.lstm(x)[0]
         output = self.linear(output)
         output = self.sigma(output)
-        return output
+        return output.squeeze(2)
 
 class GRULinear(torch.nn.Module):
     """
@@ -154,4 +154,4 @@ class GRULinear(torch.nn.Module):
         output = self.gru(x)[0]
         output = self.linear(output)
         output = self.sigma(output)
-        return output
+        return output.squeeze(2)

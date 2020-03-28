@@ -16,32 +16,31 @@ class PadSequence:
         labels = torch.Tensor([x[1] for x in sorted_batch])
         return sequences_padded, labels, lengths
 
-def train(input_tensor,target,model,optimiser,criterion,clip,lengths):
+def train(input_tensor,target,model,optimiser,criterion,clip):
     model.train()
     optimiser.zero_grad()
     prediction = model(input_tensor)
-    loss = criterion(prediction.squeeze(1),target)
+    loss = criterion(prediction, target)
     loss.backward()
-    torch.nn.utils.clip_grad_norm_(model.parameters(),clip)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
     optimiser.step()
     return loss.item(), prediction
 
-def valid(input_tensor,target,model,criterion,lengths):
+def valid(input_tensor,target,model,criterion):
     model.eval()
-    prediction = model(input_tensor)
-    loss = criterion(prediction.squeeze(1),target)
+    prediction = model(input_tensor).squeeze(0)
+    loss = criterion(prediction, target)
     return loss.item(), prediction
 
 def test(target_tensor,prediction_tensor):
     t = target_tensor.cpu().detach().numpy()
     t = np.array([target for target in t])
-    
+
     p = prediction_tensor.cpu().detach().numpy()
     p = np.array([predic for predic in p])
     p = p.round()
-    p = p.squeeze(1)
-            
-    return accuracy_score(t,p), precision_score(t,p), recall_score(t,p)
+    p, t = p.squeeze(0), t.squeeze(0)        
+    return accuracy_score(t, p), precision_score(t, p), recall_score(t, p)
 
 def trainIters(model,
                train_dset,
@@ -59,14 +58,14 @@ def trainIters(model,
     optimiser = AdamW(model.parameters(), lr=learning_rate,weight_decay=weight_decay)
     criterion = torch.nn.MSELoss()
     
-    train_dl=torch.utils.data.DataLoader(train_dset, batch_size=batch_size,collate_fn=collate_fn)
-    valid_dl=torch.utils.data.DataLoader(valid_dset, batch_size=batch_size,collate_fn=collate_fn)
+    train_dl = torch.utils.data.DataLoader(train_dset, batch_size=batch_size,collate_fn=collate_fn)
+    valid_dl = torch.utils.data.DataLoader(valid_dset, batch_size=batch_size,collate_fn=collate_fn)
     
-    train_losses=[np.inf]
-    valid_losses=[np.inf]
-    train_acc=train_prec=train_rec=0
-    valid_acc=valid_prec=valid_rec=0
-    tqdm_range=tqdm(range(1,n_epochs+1),desc='Epoch',leave=False)
+    train_losses = [np.inf]
+    valid_losses = [np.inf]
+    train_acc = train_prec = train_rec = 0
+    valid_acc = valid_prec = valid_rec = 0
+    tqdm_range = tqdm(range(1, n_epochs+1), desc='Epoch', leave=False)
     first_epoch = True
     for epoch in tqdm_range:
         
@@ -103,7 +102,7 @@ def trainIters(model,
 #         for i in train_dl:
 #             print(i[0],i[1],i[2])
     
-        for x,y,lengths in train_dl:
+        for x, y in train_dl:
             input_tensor = x.to(device)
             target = y.to(device)
             train_loss, prediction = train(input_tensor,
@@ -111,9 +110,8 @@ def trainIters(model,
                                            model,
                                            optimiser,
                                            criterion,
-                                           clip,
-                                           lengths)
-            accuracy,precision,recall=test(target,prediction)
+                                           clip)
+            accuracy, precision, recall = test(target,prediction)
             avg_train.append(train_loss)
             train_acc.append(accuracy)
             train_prec.append(precision)
@@ -138,8 +136,7 @@ def trainIters(model,
                 v_loss, valid_pred = valid(input_tensor,
                                            target,
                                            model,
-                                           criterion,
-                                           lengths)
+                                           criterion)
                 accuracy, precision, recall = test(target,valid_pred)
                 avg_valid.append(v_loss)
                 valid_acc.append(accuracy)
@@ -159,4 +156,4 @@ def trainIters(model,
             first_epoch = False
         print("{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t".format(avg_train,train_acc,train_prec,train_rec,avg_valid,valid_acc,valid_prec,valid_rec))
 
-    return train_losses,valid_losses
+    return train_losses, valid_losses
