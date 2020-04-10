@@ -155,3 +155,84 @@ class GRULinear(torch.nn.Module):
         output = self.linear(output)
         output = self.sigma(output)
         return output.squeeze(2)
+
+class AttentionEncoder(torch.nn.Module):
+    """
+    Attention encoder that returns the annotation representation
+    of the input sequence
+    """
+    def __init__(self, hidden_size, input_size):
+        """
+        Create the rnn cell object
+        """
+        super().__init__()
+        self.gru = torch.nn.GRU(input_size, hidden_size, batch_first=True, bidirectional=True)
+        self.output = torch.nn.Linear(in_features=2*hidden_size, out_features=hidden_size)
+        self.hidden_size = hidden_size
+    def forward(self, input):
+        """
+        Iterate over the input in both directions gathering
+        hidden states and concatenate them to create annotations
+        """
+        output = self.gru(input)[0]
+        output = output.view(len(input[0]), len(input), 2, self.hidden_size).squeeze(1)
+        forward = output[:,0,:]
+        backward = output[:,1,:]
+        output = torch.cat([forward, backward], dim=1)
+        output = self.output(output)
+        return output
+
+class AttentionDecoder(torch.nn.Module):
+    """
+    Attention decoder that calculates the annotation weights and
+    applies the attention mechanism to the decoding step
+    """
+    def __init__(self, hidden_size, max_length=256):
+        """
+        Create Linear layer for the alignment model and
+        GRU network that decodes the input
+        """
+        super().__init__()
+        self.attn = torch.nn.Linear(in_features=hidden_size, out_features=max_length)
+        self.max_len = max_length
+        self.gru = torch.nn.GRU(input_size=hidden_size, hidden_size=hidden_size, batch_first=True)
+        self.linear = torch.nn.Linear(in_features=hidden_size, out_features=1)
+        self.output = torch.nn.Linear(in_features=2, out_features=1)
+        
+    def forward(self, annotations, hidden, prev_sent):
+        """
+        Combine encoder annotations with hidden state to obtain
+        attention weights and use these to create the i-th context
+        vector
+        """
+        attn = torch.cat([annotations, hidden])
+        attn = torch.nn.functional.softmax(self.attn(attn), dim=1)
+        annotations = torch.nn.functional.pad(annotations, (0,0,0,self.max_len-len(annotations)))
+        context = torch.bmm(attn.unsqueeze(0), annotations.unsqueeze(0)).squeeze(0)
+        attn_input = torch.cat([hidden, context], dim=0).unsqueeze(0)
+        output, hidden = self.gru(attn_input)
+        output = self.linear(output).permute(0,2,1)
+        output = torch.cat([torch.mean(output).unsqueeze(0), prev_sent.unsqueeze(0)])
+        output = torch.sigmoid(self.output(output))
+        return output.squeeze(0), hidden.squeeze(0)
+
+class AttEncoderDecoder(torch.nn.Module):
+    """
+    Encoder-Decoder architecture with an original implementation of the
+    attention mechanism (Bahdanau 2015)
+    """
+    def __init__(self, hidden_size):
+        super().__init__()
+        self.encoder = AttentionEncoder(hidden_size=hidden_size, input_size=64)
+        self.decoder = AttentionDecoder(hidden_size=hidden_size)
+        self.hidden_size = hidden_size
+    def forward(self, input):
+        annotations = self.encoder(input)
+        prev_sent = torch.tensor(1.0)
+        hidden = torch.zeros([1, self.hidden_size])
+        output = []
+        for i in range(len(annotations)):
+            prev_sent, hidden = self.decoder(annotations, hidden, prev_sent)
+            output.append(prev_sent)
+        output = torch.stack(output)
+        return output
