@@ -187,7 +187,7 @@ class AttentionDecoder(torch.nn.Module):
     Attention decoder that calculates the annotation weights and
     applies the attention mechanism to the decoding step
     """
-    def __init__(self, hidden_size, max_length=256):
+    def __init__(self, hidden_size, max_length):
         """
         Create Linear layer for the alignment model and
         GRU network that decodes the input
@@ -216,15 +216,17 @@ class AttentionDecoder(torch.nn.Module):
         output = torch.sigmoid(self.output(output))
         return output.squeeze(0), hidden.squeeze(0)
 
+
 class AttEncoderDecoder(torch.nn.Module):
     """
     Encoder-Decoder architecture with an original implementation of the
     attention mechanism (Bahdanau 2015)
     """
-    def __init__(self, hidden_size):
+    def __init__(self, hidden_size, max_length):
         super().__init__()
+        self.max_length = max_length
         self.encoder = AttentionEncoder(hidden_size=hidden_size, input_size=64)
-        self.decoder = AttentionDecoder(hidden_size=hidden_size)
+        self.decoder = AttentionDecoder(hidden_size=hidden_size, max_length=self.max_length)
         self.hidden_size = hidden_size
     def forward(self, input):
         annotations = self.encoder(input)
@@ -235,4 +237,4 @@ class AttEncoderDecoder(torch.nn.Module):
             prev_sent, hidden = self.decoder(annotations, hidden, prev_sent)
             output.append(prev_sent)
         output = torch.stack(output)
-        return output
+        return output.unsqueeze(0)

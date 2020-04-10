@@ -42,6 +42,7 @@ def test(target_tensor,prediction_tensor):
     try:
         p, t = p.squeeze(0), t.squeeze(0)
     except ValueError:
+        print("ola k ase")
         print(p.shape, t.shape)
     return accuracy_score(t, p), precision_score(t, p), recall_score(t, p)
 

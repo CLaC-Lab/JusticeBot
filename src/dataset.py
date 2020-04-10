@@ -115,9 +115,10 @@ class DocumentDataset(Dataset):
     Inherits the PyTorch Dataset class. 
     Reads disc and returns camemBERT document representation
     """
-    def __init__(self, ds_loc):
+    def __init__(self, ds_loc, max_length=None):
         """ds_loc : folder containing the raw data"""
         self.loc = ds_loc
+        self.max_length = max_length
     
     def __len__(self):
         return len(os.listdir(self.loc))
@@ -135,4 +136,6 @@ class DocumentDataset(Dataset):
         sentences = [tensor.squeeze(0) for tensor in sentences]
         sentences = torch.stack(sentences)
         annotations = doc[-1]
+        if self.max_length != None:
+        	return sentences[:self.max_length], annotations[:self.max_length]
         return sentences, annotations
