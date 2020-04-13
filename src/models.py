@@ -145,10 +145,10 @@ class GRULinear(torch.nn.Module):
     GRU network with a linear head that takes in a camemBERT
     document representation and returns a binary sequence
     """
-    def __init__(self, embedding_size):
+    def __init__(self, embedding_size, hidden_size=128):
         super(GRULinear, self).__init__()
-        self.gru = torch.nn.GRU(input_size=embedding_size, hidden_size=64, batch_first=True, bidirectional=True)
-        self.linear = torch.nn.Linear(in_features=2*embedding_size, out_features=1)
+        self.gru = torch.nn.GRU(input_size=embedding_size, hidden_size=hidden_size, batch_first=True, bidirectional=True)
+        self.linear = torch.nn.Linear(in_features=2*hidden_size, out_features=1)
         self.sigma = torch.nn.Sigmoid()
     def forward(self, x):
         output = self.gru(x)[0]
@@ -178,6 +178,7 @@ class AttentionEncoder(torch.nn.Module):
         output = output.view(len(input[0]), len(input), 2, self.hidden_size).squeeze(1)
         forward = output[:,0,:]
         backward = output[:,1,:]
+        backward = reversed(backward)
         output = torch.cat([forward, backward], dim=1)
         output = self.output(output)
         return output
@@ -222,16 +223,17 @@ class AttEncoderDecoder(torch.nn.Module):
     Encoder-Decoder architecture with an original implementation of the
     attention mechanism (Bahdanau 2015)
     """
-    def __init__(self, hidden_size, max_length):
+    def __init__(self, hidden_size, max_length, device):
         super().__init__()
         self.max_length = max_length
         self.encoder = AttentionEncoder(hidden_size=hidden_size, input_size=64)
         self.decoder = AttentionDecoder(hidden_size=hidden_size, max_length=self.max_length)
         self.hidden_size = hidden_size
+        self.device = device
     def forward(self, input):
         annotations = self.encoder(input)
-        prev_sent = torch.tensor(1.0)
-        hidden = torch.zeros([1, self.hidden_size])
+        prev_sent = torch.tensor(1.0).to(self.device)
+        hidden = torch.zeros([1, self.hidden_size]).to(self.device)
         output = []
         for i in range(len(annotations)):
             prev_sent, hidden = self.decoder(annotations, hidden, prev_sent)

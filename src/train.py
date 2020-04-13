@@ -39,12 +39,18 @@ def test(target_tensor,prediction_tensor):
     p = prediction_tensor.cpu().detach().numpy()
     p = np.array([predic for predic in p])
     p = p.round()
+    t, p = t.squeeze(0), p.squeeze(0)
+#     print("\nt, p shapes: {}, {}".format(t.shape, p.shape))
     try:
-        p, t = p.squeeze(0), t.squeeze(0)
+        acc = accuracy_score(t, p)
+        pre = precision_score(t, p)
+        rec = recall_score(t, p)
     except ValueError:
-        print("ola k ase")
-        print(p.shape, t.shape)
-    return accuracy_score(t, p), precision_score(t, p), recall_score(t, p)
+        print("ValueError!")
+        print("t, p: {}, {}".format(t, p))
+        print("Skipping this training example...")
+        acc = pre = rec = 0
+    return acc, pre, rec
 
 def trainIters(model,
                train_dset,

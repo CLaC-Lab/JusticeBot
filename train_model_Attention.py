@@ -12,16 +12,16 @@ MAX_LENGTH = 256
 
 device = torch.device("cuda")
 ds_loc = "data/camemBERT_representations_64/"
-dataset = DocumentDataset(ds_loc)
+dataset = DocumentDataset(ds_loc, max_length=256)
 tr = int(len(dataset)*.70)
 vd = int(len(dataset)*.10)
 ts = len(dataset) - tr - vd
 train_dset, valid_dset, test_dset = torch.utils.data.random_split(dataset, [tr, vd, ts])
-model = AttEncoderDecoder(hidden_size=16, max_length=MAX_LENGTH).to(device)
+model = AttEncoderDecoder(hidden_size=256, max_length=MAX_LENGTH, device=device).to(device)
 
 ## CONFIG
 batch_size = 1
-n_epochs = 20
+n_epochs = 15
 learning_rate = 1e-4
 weight_decay = 0
 clip = .2
