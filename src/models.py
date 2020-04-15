@@ -5,53 +5,46 @@ import torch
 from torch import nn
 
 
-class FactsOrAnalysis(nn.Module):
-    def __init__(self,embeddings_tensor,hidden_size=512,dropout=.5,gru_dropout=.3,embedding_size=200,out_channels=100,kernel_size=3,max_sen_len=50):
-        super(FactsOrAnalysis, self).__init__()
-        self.hidden_size = hidden_size
-        self.embedding_size = embedding_size
-        self.out_channels = out_channels
-        self.kernel_size = kernel_size
-        self.max_sen_len = max_sen_len
-        self.embedding = nn.Embedding.from_pretrained(embeddings_tensor)
-        self.rnn = nn.GRU(embedding_size,
+class SentenceClassifier(torch.nn.Module):
+    """
+    Performs binary sentence classification
+    """
+    def __init__(self, embeddings_tensor, 
+                 hidden_size=512, 
+                 dropout=.5,
+                 embedding_size=200, 
+                 out_channels=100, 
+                 kernel_size=3, 
+                 max_sen_len=50):
+        super().__init__()
+        self.embedding = torch.nn.Embedding.from_pretrained(embeddings_tensor)
+        self.gru = torch.nn.GRU(embedding_size,
                           hidden_size,
-                          num_layers=3,
                           batch_first=True,
-                          bidirectional=True,
-                          dropout=gru_dropout)
-
+                          bidirectional=True)
         # Taken from the TextCNN implementation by Anubhav Gupta
         # https://github.com/AnubhavGupta3377/Text-Classification-Models-Pytorch
-        self.conv1 = nn.Sequential(
-            nn.Conv1d(in_channels=self.embedding_size, out_channels=self.out_channels, kernel_size=self.kernel_size),
-            nn.ReLU(),
-            nn.MaxPool1d(self.max_sen_len - self.kernel_size+1)
+        self.conv1 = torch.nn.Sequential(
+            torch.nn.Conv1d(in_channels=embedding_size, out_channels=out_channels, kernel_size=kernel_size),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool1d(max_sen_len - kernel_size+1)
         )
         
-        self.linear = nn.Linear(self.hidden_size+self.out_channels,2)
-        self.softmax = nn.Softmax(dim=1)
-        self.drop = nn.Dropout(dropout)
+        self.linear = torch.nn.Linear(in_features=hidden_size+out_channels, out_features=1)
+        self.drop = torch.nn.Dropout(dropout)
     
-    def initHidden(self):
-        n=1 if self.rnn.bidirectional==False else 2
-        l=self.rnn.num_layers
-        return torch.zeros(n*l, 1, self.hidden_size, device=device)
-    
-    def forward(self,input_tensor):
-        hidden=self.initHidden()
-#         print("input:",input_tensor.shape)
-        output = self.embedding(input_tensor)
-#         print("output:",output.shape)
-        conv_output = self.conv1(output.permute(0,2,1))
+    def forward(self, input):
+        output = self.embedding(input)
+        conv_output = self.conv1(output.permute(0, 2, 1))
         conv_output = conv_output.squeeze(2)
         output = self.drop(output)
-        _, hidden = self.rnn(output)
+        _, hidden = self.gru(output)
         hidden = hidden[0]
-        cat_tensors = torch.cat((conv_output,hidden),1)
+        cat_tensors = torch.cat((conv_output, hidden), dim=1)
         cat_tensors = self.drop(cat_tensors)
         output = self.linear(cat_tensors)
-        return self.softmax(output)
+        output = torch.sigmoid(output).squeeze(1)
+        return output
 
 
 
@@ -182,40 +175,6 @@ class AttentionEncoder(torch.nn.Module):
         output = torch.cat([forward, backward], dim=1)
         output = self.output(output)
         return output
-
-# class AttentionDecoder(torch.nn.Module):
-#     """
-#     Attention decoder that calculates the annotation weights and
-#     applies the attention mechanism to the decoding step
-#     """
-#     def __init__(self, hidden_size, max_length):
-#         """
-#         Create Linear layer for the alignment model and
-#         GRU network that decodes the input
-#         """
-#         super().__init__()
-#         self.attn = torch.nn.Linear(in_features=hidden_size, out_features=max_length)
-#         self.max_len = max_length
-#         self.gru = torch.nn.GRU(input_size=hidden_size, hidden_size=hidden_size, batch_first=True)
-#         self.linear = torch.nn.Linear(in_features=hidden_size, out_features=1)
-#         self.output = torch.nn.Linear(in_features=2, out_features=1)
-        
-#     def forward(self, annotations, hidden, prev_sent):
-#         """
-#         Combine encoder annotations with hidden state to obtain
-#         attention weights and use these to create the i-th context
-#         vector
-#         """
-#         attn = torch.cat([annotations, hidden])
-#         attn = torch.nn.functional.softmax(self.attn(attn), dim=1)
-#         annotations = torch.nn.functional.pad(annotations, (0, 0, 0, self.max_len-len(annotations)))
-#         context = torch.bmm(attn.unsqueeze(0), annotations.unsqueeze(0)).squeeze(0)
-#         attn_input = torch.cat([hidden, context], dim=0).unsqueeze(0)
-#         output, hidden = self.gru(attn_input)
-#         output = self.linear(output).permute(0, 2, 1)
-#         output = torch.cat([torch.mean(output).unsqueeze(0), prev_sent.unsqueeze(0)])
-#         output = torch.sigmoid(self.output(output))
-#         return output.squeeze(0), hidden.squeeze(0)
 
 class AttentionDecoder(torch.nn.Module):
     """

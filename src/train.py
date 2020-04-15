@@ -32,15 +32,15 @@ def valid(input_tensor,target,model,criterion):
     loss = criterion(prediction, target)
     return loss.item(), prediction
 
-def test(target_tensor,prediction_tensor):
+def test(target_tensor, prediction_tensor):
     t = target_tensor.cpu().detach().numpy()
     t = np.array([target for target in t])
 
     p = prediction_tensor.cpu().detach().numpy()
     p = np.array([predic for predic in p])
     p = p.round()
-    t, p = t.squeeze(0), p.squeeze(0)
-#     print("\nt, p shapes: {}, {}".format(t.shape, p.shape))
+    # print("\nt, p shapes: {}, {}".format(t.shape, p.shape))
+    # t, p = t.squeeze(0), p.squeeze(0)
     try:
         acc = accuracy_score(t, p)
         pre = precision_score(t, p)
@@ -71,8 +71,8 @@ def trainIters(model,
     optimiser = AdamW(model.parameters(), lr=learning_rate,weight_decay=weight_decay)
     criterion = torch.nn.MSELoss()
     
-    train_dl = torch.utils.data.DataLoader(train_dset, batch_size=batch_size,collate_fn=collate_fn)
-    valid_dl = torch.utils.data.DataLoader(valid_dset, batch_size=batch_size,collate_fn=collate_fn)
+    train_dl = torch.utils.data.DataLoader(train_dset, batch_size=batch_size, collate_fn=collate_fn)
+    valid_dl = torch.utils.data.DataLoader(valid_dset, batch_size=batch_size, collate_fn=collate_fn)
     
     train_losses = [np.inf]
     valid_losses = [np.inf]
@@ -110,55 +110,56 @@ def trainIters(model,
         train_acc = []
         train_prec = []
         train_rec = []
-        train_dl = tqdm(train_dl,desc='Training examples',leave=False)
+        train_dl = tqdm(train_dl, desc='Training examples', leave=False)
         
 #         for i in train_dl:
 #             print(i[0],i[1],i[2])
     
-        for x, y in train_dl:
-            input_tensor = x.to(device)
-            target = y.to(device)
+        for sentence, annotation, lengths in train_dl:
+            input_tensor = sentence.to(device)
+            target = annotation.to(device)
             train_loss, prediction = train(input_tensor,
                                            target,
                                            model,
                                            optimiser,
                                            criterion,
                                            clip)
-            accuracy, precision, recall = test(target,prediction)
+
+            accuracy, precision, recall = test(target, prediction)
             avg_train.append(train_loss)
             train_acc.append(accuracy)
             train_prec.append(precision)
             train_rec.append(recall)
             train_dl.set_description("Training loss: {:.4f}".format(train_loss))
-        avg_train=sum(avg_train)/len(avg_train)
+        avg_train = sum(avg_train)/len(avg_train)
         
-        train_acc=sum(train_acc)/len(train_acc)
-        train_prec=sum(train_prec)/len(train_prec)
-        train_rec=sum(train_rec)/len(train_rec)
+        train_acc = sum(train_acc)/len(train_acc)
+        train_prec = sum(train_prec)/len(train_prec)
+        train_rec = sum(train_rec)/len(train_rec)
         train_losses.append(avg_train)
         with torch.no_grad():
-            avg_valid=[]
-            valid_acc=[]
-            valid_prec=[]
-            valid_rec=[]
-            valid_dl=tqdm(valid_dl,desc='Validation examples',leave=False)
-            for x, y in valid_dl:
-                input_tensor = x.to(device)
-                target = y.to(device)
+            avg_valid = []
+            valid_acc = []
+            valid_prec = []
+            valid_rec = []
+            valid_dl = tqdm(valid_dl, desc='Validation examples', leave=False)
+            for sentence, annotation, lengths in valid_dl:
+                input_tensor = sentence.to(device)
+                target = annotation.to(device)
                 v_loss, valid_pred = valid(input_tensor,
                                            target,
                                            model,
                                            criterion)
-                accuracy, precision, recall = test(target,valid_pred)
+                accuracy, precision, recall = test(target, valid_pred)
                 avg_valid.append(v_loss)
                 valid_acc.append(accuracy)
                 valid_prec.append(precision)
                 valid_rec.append(recall)
                 valid_dl.set_description('Validation loss: {:.4f}'.format(v_loss))
-            avg_valid=sum(avg_valid)/len(avg_valid)
-            valid_acc=sum(valid_acc)/len(valid_acc)
-            valid_prec=sum(valid_prec)/len(valid_prec)
-            valid_rec=sum(valid_rec)/len(valid_rec)
+            avg_valid = sum(avg_valid)/len(avg_valid)
+            valid_acc = sum(valid_acc)/len(valid_acc)
+            valid_prec = sum(valid_prec)/len(valid_prec)
+            valid_rec = sum(valid_rec)/len(valid_rec)
             valid_losses.append(v_loss)
             
         # IPython.display.clear_output(wait=True)

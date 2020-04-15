@@ -1,4 +1,4 @@
-import torch, pickle, os
+import torch, pickle, os, gensim
 import pandas as pd
 import torch.nn.functional as F
 from torch.utils.data import Dataset
@@ -28,27 +28,31 @@ def tensorFromSentence(lexicon,sentence):
         index_list.append(index)
     return torch.tensor(index_list, dtype=torch.long)
 
-class FactsOrAnalysisDataset(Dataset):
-    """PyTorch Dataset class. Returns input-target tensor pairs"""
-    def __init__(self,csv_file,max_length=50,embeddings_file="embeddings.bin",n_sentences=0):
-        self.facts_or_analysis_frame = pd.read_csv(csv_file)
-        self.embeddings = gensim.models.KeyedVectors.load_word2vec_format(embeddings_file,binary=True,unicode_errors='ignore')
+class SentenceDataset(Dataset):
+    """
+    Creates PyTorch dataset consisting of sentence-tag pairs 
+    represented as tensors
+    """
+    def __init__(self, pickle_file, max_len=50, embeddings_file="embeddings.bin", n_sentences=0):
+        with open(pickle_file, "rb") as file:
+            self.data = pickle.load(file)
+        self.embeddings = gensim.models.KeyedVectors.load_word2vec_format(embeddings_file, binary=True, unicode_errors='ignore')
         if n_sentences > 0:
-            self.facts_or_analysis_frame = self.facts_or_analysis_frame.iloc[0:n_sentences]
-        self.max_length = max_length
-        self.lexicon=Lexicon(self.embeddings)
+            self.data = self.data[:n_sentences]
+        self.lexicon = Lexicon(self.embeddings)
+        self.max_len = max_len
     
     def __len__(self):
-        return len(self.facts_or_analysis_frame)
+        return len(self.data)
     
-    def __getitem__(self,index):
-        sentence = self.facts_or_analysis_frame.iloc[index,0]
-        annotation = self.facts_or_analysis_frame.iloc[index,1]
-        sentence = tensorFromSentence(self.lexicon,sentence)
-        padding = self.max_length - len(sentence)
+    def __getitem__(self, index):
+        sentence = self.data[index][0]
+        annotation = self.data[index][1]
+        sentence = tensorFromSentence(self.lexicon, sentence)
+        padding = self.max_len - len(sentence)
         sentence = F.pad(sentence, pad=(0, padding), mode='constant', value=0)
-        annotation = torch.tensor([1,0], dtype=torch.float) if annotation==1 else torch.tensor([0,1], dtype=torch.float)
-        return sentence,annotation
+        annotation = torch.tensor(annotation, dtype=torch.float)
+        return sentence, annotation
     
 class FactsOrAnalysisDS_BERT(Dataset):
     """
