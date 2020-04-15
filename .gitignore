@@ -7,3 +7,4 @@ test*
 *pycache*/
 [0-9]*.pickle
 *.zip
+src/*pycache*/

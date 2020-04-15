@@ -17,7 +17,7 @@ tr = int(len(dataset)*.70)
 vd = int(len(dataset)*.10)
 ts = len(dataset) - tr - vd
 train_dset, valid_dset, test_dset = torch.utils.data.random_split(dataset, [tr, vd, ts])
-model = AttEncoderDecoder(hidden_size=256, max_length=MAX_LENGTH, device=device).to(device)
+model = AttEncoderDecoder(hidden_size=512, max_len=MAX_LENGTH, device=device).to(device)
 
 ## CONFIG
 batch_size = 1

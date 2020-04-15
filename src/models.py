@@ -225,5 +225,5 @@ class AttEncoderDecoder(torch.nn.Module):
         for i in range(len(annotations)):
             sent, hidden = self.decoder(annotations, hidden)
             output.append(sent)
-        output = torch.stack(output).squeeze(1)
+        output = torch.stack(output).permute(1,0)
         return output
