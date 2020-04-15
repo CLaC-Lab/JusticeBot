@@ -63,7 +63,7 @@ def trainIters(model,
                collate_fn=None):
 
     with open("output", "w") as op:
-        op.write("tr loss\t\ttr acc\t\ttr prec\t\ttr rec\t\tv loss\t\tv acc\t\tv prec\t\tv rec\n\n")
+        op.write("tr loss\ttr acc\ttr prec\ttr rec\tv loss\tv acc\tv prec\tv rec\n")
         
     print("CUDA is available!" if torch.cuda.is_available() else "NO CUDA 4 U")
     
@@ -167,5 +167,5 @@ def trainIters(model,
         # IPython.display.clear_output(wait=True)
         # tqdm_range.refresh()
         with open("output", "a") as op:
-            op.write("{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}\t\t\n".format(avg_train,train_acc,train_prec,train_rec,avg_valid,valid_acc,valid_prec,valid_rec))
+            op.write("{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t\n".format(avg_train,train_acc,train_prec,train_rec,avg_valid,valid_acc,valid_prec,valid_rec))
     return train_losses, valid_losses
