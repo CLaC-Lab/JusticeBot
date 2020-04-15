@@ -20,6 +20,7 @@ class SentenceClassifier(torch.nn.Module):
         self.embedding = torch.nn.Embedding.from_pretrained(embeddings_tensor)
         self.gru = torch.nn.GRU(embedding_size,
                           hidden_size,
+                          num_layers=3,
                           batch_first=True,
                           bidirectional=True)
         # Taken from the TextCNN implementation by Anubhav Gupta
