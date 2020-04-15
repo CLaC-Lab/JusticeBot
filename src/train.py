@@ -12,9 +12,8 @@ class PadSequence:
         sorted_batch = sorted(batch, key=lambda x: x[0].shape[0], reverse=True)
         sequences = [x[0] for x in sorted_batch]
         sequences_padded = torch.nn.utils.rnn.pad_sequence(sequences, batch_first=True)
-        lengths = torch.Tensor([len(x) for x in sequences])
         labels = torch.Tensor([x[1] for x in sorted_batch])
-        return sequences_padded, labels, lengths
+        return sequences_padded, labels.unsqueeze(0)
 
 def train(input_tensor,target,model,optimiser,criterion,clip):
     model.train()
@@ -40,7 +39,7 @@ def test(target_tensor, prediction_tensor):
     p = np.array([predic for predic in p])
     p = p.round()
     # print("\nt, p shapes: {}, {}".format(t.shape, p.shape))
-    # t, p = t.squeeze(0), p.squeeze(0)
+    t, p = t.squeeze(0), p.squeeze(0)
     try:
         acc = accuracy_score(t, p)
         pre = precision_score(t, p)
@@ -61,7 +60,7 @@ def trainIters(model,
                weight_decay,
                clip,
                device,
-               collate_fn=PadSequence()):
+               collate_fn=None):
 
     with open("output", "w") as op:
         op.write("tr loss\t\ttr acc\t\ttr prec\t\ttr rec\t\tv loss\t\tv acc\t\tv prec\t\tv rec\n\n")
@@ -70,9 +69,11 @@ def trainIters(model,
     
     optimiser = AdamW(model.parameters(), lr=learning_rate,weight_decay=weight_decay)
     criterion = torch.nn.MSELoss()
-    
-    train_dl = torch.utils.data.DataLoader(train_dset, batch_size=batch_size, collate_fn=collate_fn)
-    valid_dl = torch.utils.data.DataLoader(valid_dset, batch_size=batch_size, collate_fn=collate_fn)
+    if collate_fn == "sentence":
+        col_func = PadSequence()
+    else: col_func = None
+    train_dl = torch.utils.data.DataLoader(train_dset, batch_size=batch_size, collate_fn=col_func)
+    valid_dl = torch.utils.data.DataLoader(valid_dset, batch_size=batch_size, collate_fn=col_func)
     
     train_losses = [np.inf]
     valid_losses = [np.inf]
@@ -115,7 +116,8 @@ def trainIters(model,
 #         for i in train_dl:
 #             print(i[0],i[1],i[2])
     
-        for sentence, annotation, lengths in train_dl:
+        for sentence, annotation in train_dl:
+            # print("\nANNOTATION SHAPE: {}".format(annotation.shape))
             input_tensor = sentence.to(device)
             target = annotation.to(device)
             train_loss, prediction = train(input_tensor,
@@ -143,7 +145,7 @@ def trainIters(model,
             valid_prec = []
             valid_rec = []
             valid_dl = tqdm(valid_dl, desc='Validation examples', leave=False)
-            for sentence, annotation, lengths in valid_dl:
+            for sentence, annotation in valid_dl:
                 input_tensor = sentence.to(device)
                 target = annotation.to(device)
                 v_loss, valid_pred = valid(input_tensor,

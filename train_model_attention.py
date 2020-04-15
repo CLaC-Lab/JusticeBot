@@ -10,7 +10,7 @@ from src.train import trainIters
 
 MAX_LENGTH = 256
 
-device = torch.device("cuda")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ds_loc = "data/camemBERT_representations_64/"
 dataset = DocumentDataset(ds_loc, max_length=256)
 tr = int(len(dataset)*.70)
@@ -26,6 +26,15 @@ learning_rate = 1e-4
 weight_decay = 0
 clip = .2
 
-t, v = trainIters(model, train_dset, valid_dset, batch_size, n_epochs, learning_rate, weight_decay, clip, device, collate_fn=None)
+t, v = trainIters(
+    model, 
+    train_dset, 
+    valid_dset, 
+    batch_size, 
+    n_epochs, 
+    learning_rate, 
+    weight_decay, 
+    clip, 
+    device)
 
 print("Done! See the output file for results.\n")

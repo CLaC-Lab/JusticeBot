@@ -140,6 +140,6 @@ class DocumentDataset(Dataset):
         sentences = [tensor.squeeze(0) for tensor in sentences]
         sentences = torch.stack(sentences)
         annotations = doc[-1]
-        if self.max_length != None:
+        if self.max_length is not None:
         	return sentences[:self.max_length], annotations[:self.max_length]
         return sentences, annotations

@@ -43,7 +43,7 @@ class SentenceClassifier(torch.nn.Module):
         cat_tensors = torch.cat((conv_output, hidden), dim=1)
         cat_tensors = self.drop(cat_tensors)
         output = self.linear(cat_tensors)
-        output = torch.sigmoid(output).squeeze(1)
+        output = torch.sigmoid(output).permute(1,0)
         return output
 
 
