@@ -34,11 +34,12 @@ class SentenceClassifier(torch.nn.Module):
         self.linear = torch.nn.Linear(in_features=hidden_size+out_channels, out_features=1)
         self.drop = torch.nn.Dropout(dropout)
     
-    def forward(self, input):
+    def forward(self, input, lengths):
         output = self.embedding(input)
         conv_output = self.conv1(output.permute(0, 2, 1))
         conv_output = conv_output.squeeze(2)
         output = self.drop(output)
+        output = torch.nn.utils.rnn.pack_padded_sequence(output, lengths, batch_first=True)
         _, hidden = self.gru(output)
         hidden = hidden[0]
         cat_tensors = torch.cat((conv_output, hidden), dim=1)

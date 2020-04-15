@@ -11,23 +11,30 @@ class PadSequence:
     def __call__(self, batch):
         sorted_batch = sorted(batch, key=lambda x: x[0].shape[0], reverse=True)
         sequences = [x[0] for x in sorted_batch]
+        lengths = torch.LongTensor([len(x) for x in sequences])
         sequences_padded = torch.nn.utils.rnn.pad_sequence(sequences, batch_first=True)
         labels = torch.Tensor([x[1] for x in sorted_batch])
-        return sequences_padded, labels.unsqueeze(0)
+        return sequences_padded, labels.unsqueeze(0), lengths
 
-def train(input_tensor,target,model,optimiser,criterion,clip):
+def train(input_tensor, target, model, optimiser, criterion, clip, lengths):
     model.train()
     optimiser.zero_grad()
-    prediction = model(input_tensor)
+    if lengths is None:
+        prediction = model(input_tensor)
+    else:
+        prediction = model(input_tensor, lengths)
     loss = criterion(prediction, target)
     loss.backward()
     torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
     optimiser.step()
     return loss.item(), prediction
 
-def valid(input_tensor,target,model,criterion):
+def valid(input_tensor, target, model, criterion, lengths):
     model.eval()
-    prediction = model(input_tensor)
+    if lengths is None:
+        prediction = model(input_tensor)
+    else:
+        prediction = model(input_tensor, lengths)
     loss = criterion(prediction, target)
     return loss.item(), prediction
 
@@ -116,17 +123,20 @@ def trainIters(model,
 #         for i in train_dl:
 #             print(i[0],i[1],i[2])
     
-        for sentence, annotation in train_dl:
-            # print("\nANNOTATION SHAPE: {}".format(annotation.shape))
-            input_tensor = sentence.to(device)
-            target = annotation.to(device)
+        for datum in train_dl:
+            input_tensor = datum[0].to(device)
+            target = datum[1].to(device)
+            if collate_fn is None:
+                lengths = None
+            else:
+                lengths = datum[2]
             train_loss, prediction = train(input_tensor,
-                                           target,
-                                           model,
-                                           optimiser,
-                                           criterion,
-                                           clip)
-
+                                       target,
+                                       model,
+                                       optimiser,
+                                       criterion,
+                                       clip,
+                                       lengths)
             accuracy, precision, recall = test(target, prediction)
             avg_train.append(train_loss)
             train_acc.append(accuracy)
@@ -145,13 +155,18 @@ def trainIters(model,
             valid_prec = []
             valid_rec = []
             valid_dl = tqdm(valid_dl, desc='Validation examples', leave=False)
-            for sentence, annotation in valid_dl:
-                input_tensor = sentence.to(device)
-                target = annotation.to(device)
+            for datum in valid_dl:
+                input_tensor = datum[0].to(device)
+                target = datum[1].to(device)
+                if collate_fn is None:
+                    lengths = None
+                else:
+                    lengths = datum[2]
                 v_loss, valid_pred = valid(input_tensor,
                                            target,
                                            model,
-                                           criterion)
+                                           criterion,
+                                           lengths)
                 accuracy, precision, recall = test(target, valid_pred)
                 avg_valid.append(v_loss)
                 valid_acc.append(accuracy)
