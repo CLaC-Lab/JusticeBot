@@ -4,12 +4,11 @@ Module containing all experimental mod
 import torch
 from torch import nn
 
-
 class SentenceClassifier(torch.nn.Module):
     """
     Performs binary sentence classification
     """
-    def __init__(self, embeddings_tensor, 
+    def __init__(self, embeddings_tensor,
                  hidden_size=512, 
                  dropout=.5,
                  embedding_size=200, 
@@ -20,7 +19,6 @@ class SentenceClassifier(torch.nn.Module):
         self.embedding = torch.nn.Embedding.from_pretrained(embeddings_tensor)
         self.gru = torch.nn.GRU(embedding_size,
                           hidden_size,
-                          num_layers=3,
                           batch_first=True,
                           bidirectional=True)
         # Taken from the TextCNN implementation by Anubhav Gupta
@@ -47,8 +45,6 @@ class SentenceClassifier(torch.nn.Module):
         output = self.linear(cat_tensors)
         output = torch.sigmoid(output).permute(1,0)
         return output
-
-
 
 class FoaCamemBERTrnn(nn.Module):
     """FIRST EXPERIMENT: camemBERT as embeddings model that feeds into a GRU network

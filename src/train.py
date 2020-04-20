@@ -45,7 +45,7 @@ def test(target_tensor, prediction_tensor):
     p = prediction_tensor.cpu().detach().numpy()
     p = np.array([predic for predic in p])
     p = p.round()
-    # print("\nt, p shapes: {}, {}".format(t.shape, p.shape))
+#     print("\nt, p shapes: {}, {}".format(t.shape, p.shape))
     t, p = t.squeeze(0), p.squeeze(0)
     try:
         acc = accuracy_score(t, p)
