@@ -4,7 +4,9 @@ BERT test.ipynb
 *.sublime*
 test*
 *.pt
+*.eval
 *pycache*/
 [0-9]*.pickle
+*.pickle
 *.zip
 src/*pycache*/

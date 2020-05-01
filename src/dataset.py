@@ -119,15 +119,20 @@ class DocumentDataset(Dataset):
     Inherits the PyTorch Dataset class. 
     Reads disc and returns camemBERT document representation
     """
-    def __init__(self, ds_loc, max_length=None):
+    def __init__(self, ds_loc, ds_len=None, max_length=None):
         """ds_loc : folder containing the raw data"""
         self.loc = ds_loc
         self.max_length = max_length
+        self.ds_len = ds_len
     
     def __len__(self):
+        if self.ds_len is not None:
+            return self.ds_len
         return len(os.listdir(self.loc))
     
     def __getitem__(self, index):
+        if self.ds_len is not None and index >= self.ds_len:
+            raise IndexError("Index out of range")
         filename = "{}{}.pickle".format(self.loc, str(index))
         doc = []
         with open(filename, "rb") as file:

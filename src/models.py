@@ -36,7 +36,6 @@ class SentenceClassifier(torch.nn.Module):
         output = self.embedding(input)
         conv_output = self.conv1(output.permute(0, 2, 1))
         conv_output = conv_output.squeeze(2)
-        output = self.drop(output)
         output = torch.nn.utils.rnn.pack_padded_sequence(output, lengths, batch_first=True)
         _, hidden = self.gru(output)
         hidden = hidden[0]
@@ -192,11 +191,23 @@ class AttentionDecoder(torch.nn.Module):
         self.gru = torch.nn.GRU(input_size=hidden_size, hidden_size=hidden_size, batch_first=True)
         self.output = torch.nn.Linear(in_features=hidden_size, out_features=1)
   
+    # def forward(self, annotations, hidden):
+    #     attn = torch.tanh(self.attn1(annotations))
+    #     attn = torch.softmax(self.attn2(attn), dim=0)
+    #     attn_applied = attn*annotations
+    #     attn_applied = torch.cat([attn_applied, hidden])
+    #     output, hidden = self.gru(attn_applied.unsqueeze(0))
+    #     hidden = hidden.squeeze(0)
+    #     output = output.squeeze(0)
+    #     output = self.output(output)
+    #     output = torch.sigmoid(torch.sum(output, dim=0))
+    #     return output, hidden
     def forward(self, annotations, hidden):
+        annotations = torch.cat([annotations, hidden], dim=0)
         attn = torch.tanh(self.attn1(annotations))
         attn = torch.softmax(self.attn2(attn), dim=0)
         attn_applied = attn*annotations
-        attn_applied = torch.cat([attn_applied, hidden])
+        attn_applied = torch.cat([annotations, hidden], dim=0)
         output, hidden = self.gru(attn_applied.unsqueeze(0))
         hidden = hidden.squeeze(0)
         output = output.squeeze(0)
