@@ -10,3 +10,4 @@ test*
 *.pickle
 *.zip
 src/*pycache*/
+*.csv

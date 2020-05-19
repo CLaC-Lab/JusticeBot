@@ -15,7 +15,7 @@ embeddings = gensim.models.KeyedVectors.load_word2vec_format(embeddings_file, bi
 embeddings_tensor = torch.FloatTensor(embeddings.vectors)
 pickle_file = "data/dataset_sentences_facts_non_facts20200427.pickle"
 dataset = SentenceDataset(pickle_file=pickle_file, embeddings_file=embeddings_file, n_sentences=0)
-tr = int(len(dataset)*.70)
+tr = int(len(dataset)*.80)
 vd = int(len(dataset)*.10)
 ts = len(dataset) - tr - vd
 train_ds, valid_ds, test_ds = torch.utils.data.random_split(dataset, [tr, vd, ts])
@@ -23,9 +23,9 @@ model = SentenceClassifier(embeddings_tensor=embeddings_tensor).to(device)
 
 ## CONFIG
 batch_size = 512
-n_epochs = 30
-learning_rate = 1e-4
-weight_decay = 0
+n_epochs = 25
+learning_rate = 1e-3
+weight_decay = 1e-4
 clip = .2
 ## /CONFIG
 
@@ -39,7 +39,7 @@ t, v = trainIters(model,
     clip, 
     device=device, 
     collate_fn="sentence",
-    lr_step=[20])
+    lr_step=[15,40])
 
 torch.save(model.state_dict(), "sentence_clf.pt")
 model.eval()

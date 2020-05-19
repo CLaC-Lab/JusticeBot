@@ -9,7 +9,7 @@ class SentenceClassifier(torch.nn.Module):
     Performs binary sentence classification
     """
     def __init__(self, embeddings_tensor,
-                 hidden_size=512, 
+                 hidden_size=256, 
                  dropout=.5,
                  embedding_size=200, 
                  out_channels=100, 
@@ -20,7 +20,9 @@ class SentenceClassifier(torch.nn.Module):
         self.gru = torch.nn.GRU(embedding_size,
                           hidden_size,
                           batch_first=True,
-                          bidirectional=True)
+                          bidirectional=True,
+                          num_layers=3,
+                          dropout=dropout)
         # Taken from the TextCNN implementation by Anubhav Gupta
         # https://github.com/AnubhavGupta3377/Text-Classification-Models-Pytorch
         self.conv1 = torch.nn.Sequential(
@@ -40,8 +42,9 @@ class SentenceClassifier(torch.nn.Module):
         _, hidden = self.gru(output)
         hidden = hidden[0]
         cat_tensors = torch.cat((conv_output, hidden), dim=1)
-        cat_tensors = self.drop(cat_tensors)
+        # cat_tensors = self.drop(cat_tensors)
         output = self.linear(cat_tensors)
+        # output = self.drop(output)
         output = torch.sigmoid(output).permute(1,0)
         return output
 
@@ -220,10 +223,10 @@ class AttEncoderDecoder(torch.nn.Module):
     Encoder-Decoder architecture with an original implementation of the
     attention mechanism (Bahdanau 2015)
     """
-    def __init__(self, hidden_size, max_len, device):
+    def __init__(self, input_size, hidden_size, max_len, device):
         super().__init__()
         self.max_len = max_len
-        self.encoder = AttentionEncoder(hidden_size=hidden_size, input_size=64)
+        self.encoder = AttentionEncoder(hidden_size=hidden_size, input_size=input_size)
         self.decoder = AttentionDecoder(hidden_size=hidden_size, max_len=self.max_len)
         self.hidden_size = hidden_size
         self.device = device

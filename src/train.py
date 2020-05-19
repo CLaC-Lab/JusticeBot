@@ -67,11 +67,13 @@ def trainIters(model,
                weight_decay,
                clip,
                device,
+               input_size,
                collate_fn=None,
                lr_step=[10],
                lr_gamma=0.1):
 
-    with open("output", "w") as op:
+    op_filename = "document" if collate_fn is None else "sentence"
+    with open("output.{}_{}".format(op_filename,input_size), "w") as op:
         op.write("tr loss\ttr acc\ttr prec\ttr rec\ttr f1\tv loss\tv acc\tv prec\tv rec\tv f1\n")
         
     print("CUDA is available!" if torch.cuda.is_available() else "NO CUDA 4 U")
@@ -191,11 +193,11 @@ def trainIters(model,
         # IPython.display.clear_output(wait=True)
         # tqdm_range.refresh()
         scheduler.step()
-        with open("output", "a") as op:
+        with open("output.{}_{}".format(op_filename, input_size), "a") as op:
             op.write("{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t\n".format(avg_train,train_acc,train_prec,train_rec,train_f1,avg_valid,valid_acc,valid_prec,valid_rec,valid_f1))
     return train_losses, valid_losses
 
-def evaluateModel(model, filename, test_set, batch_size, device, collate_fn=None):
+def evaluateModel(model, filename, test_set, batch_size, device, input_size, collate_fn=None):
     avg_acc = []
     avg_prec = []
     avg_rec = []
@@ -203,7 +205,7 @@ def evaluateModel(model, filename, test_set, batch_size, device, collate_fn=None
     collate_fn = PadSequence() if collate_fn == "sentence" else None
     data_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, collate_fn=collate_fn)
     data_loader = tqdm(data_loader, desc="Evaluating", leave=False)
-    file = open("{}.eval".format(filename), "w")
+    file = open("{}_{}.eval".format(filename, input_size), "w")
     file.write("accuracy\tprecision\trecall\t\tf1\n")
     for datum in data_loader:
         sentence = datum[0]
